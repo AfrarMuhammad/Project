@@ -1,0 +1,60 @@
+pipeline {
+    agent {
+        label 'afrar muhammad afsal'
+    }
+
+    environment {
+        PROJECT_DIR = 'project' 
+        XAMPP_HTDOCS = 'C:\\xampp\\htdocs'
+        PHP_PATH = 'C:\\xampp\\php\\php.exe' 
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                echo '📦 Cloning project repository...'
+                checkout scm
+            }
+        }
+
+        stage('PHP Lint Check') {
+            steps {
+                echo '🔍 Running PHP lint check...'
+                bat '''
+                setlocal enabledelayedexpansion
+                for /R %%f in (*.php) do (
+                    echo Checking %%f...
+                    "%PHP_PATH%" -l "%%f" || exit /b 1
+                )
+                endlocal
+                '''
+            }
+        }
+
+        stage('Deploy to XAMPP') {
+            steps {
+                echo '🚀 Deploying to XAMPP htdocs...'
+                bat """
+                rmdir /s /q "%XAMPP_HTDOCS%\\%PROJECT_DIR%"
+                xcopy /s /i /y "%WORKSPACE%\\%PROJECT_DIR%" "%XAMPP_HTDOCS%\\%PROJECT_DIR%"
+                """
+            }
+        }
+
+        stage('Open in Browser') {
+            steps {
+                echo '🌐 Opening project in default browser...'
+                bat 'start http://localhost/project/index.php' 
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Build and deployment completed successfully!'
+        }
+        failure {
+            echo '❌ Build failed!'
+        }
+    }
+}
